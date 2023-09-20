@@ -74,25 +74,179 @@ contract Desafio_4 {
     error OfertaInvalida();
     error SubastaEnMarcha();
 
+    // Un ether
+    uint constant ETH = 10**18; 
+
+    // struct Bidder {
+    //     address oferenteID;
+    //     uint amount;
+    // }
+
+    struct Auction {
+        bytes32 auctionID;
+        address owner;
+        bool finalized;
+        
+        uint startTime;
+        uint endTime;
+        // uint lastOffer;  // la última oferta siempre va a ser la mejor
+
+        address[] bidders;
+        mapping(address => uint) offers;
+        // Bidder[] bidders;
+        
+        uint highestBid;
+        address highestBidder;
+    }
+    
+    bytes32[] subastasActivas;
+    mapping(bytes32 => Auction) subastas;
+
+    
+    modifier siSubastaExiste(bytes32 _auctionID) {
+        if (subastas[_auctionID].auctionID == 0)
+            revert SubastaInexistente();
+        _;
+    }
+
+    modifier enTiempo(bytes32 _auctionID) {
+
+        uint startTime = subastas[_auctionID].startTime;
+        uint endTime = subastas[_auctionID].endTime;
+        uint actual = block.timestamp;
+
+        if (startTime > actual || actual > endTime)
+            revert FueraDeTiempo();
+
+        _;
+    }
+
+    modifier siSubastaTerminada(bytes32 _auctionID) {
+        if (subastas[_auctionID].endTime > block.timestamp)
+            revert SubastaEnMarcha();
+        _;
+    }
+
+    modifier siSubastaFinalizada(bytes32 _auctionID) {
+        if (!subastas[_auctionID].finalized)
+            revert SubastaEnMarcha();
+        _;
+    }
+
+    modifier siSubastaNoFinalizada(bytes32 _auctionID) {
+        if (subastas[_auctionID].finalized)
+            revert SubastaInexistente();
+        _;
+    }
+
     function creaSubasta(uint256 _startTime, uint256 _endTime) public payable {
+        if (_endTime < _startTime) {
+            revert TiempoInvalido();
+        }
+        if (msg.value != ETH) {
+            revert CantidadIncorrectaEth();
+        }
+
         bytes32 _auctionId = _createId(_startTime, _endTime);
 
-        // emit SubastaCreada(_auctionId, msg.sender);
+        subastasActivas.push(_auctionId);
+
+        Auction storage auction = subastas[_auctionId];
+        auction.auctionID = _auctionId;
+        auction.owner = msg.sender;
+        auction.startTime = _startTime;
+        auction.endTime = _endTime;
+
+        // El siguiente código comentado son pruebas que no funcionan pero que quise 
+        // hacer para entender mejor lo que explicó el profesor Lee respecto de estas
+        // particularidades de estructuras en solidity.
+
+        // Auction memory auction = Auction({
+        //     auctionID : _auctionId,
+        //     owner     : msg.sender,
+        //     startTime : _startTime,
+        //     endTime   : _endTime
+        // });
+
+        // subastasActivas.push(auction);
+
+        // subastasActivas.push(Auction({
+        //     auctionID : _auctionId,
+        //     owner     : msg.sender,
+        //     startTime : _startTime,
+        //     endTime   : _endTime            
+        // }));
+
+        emit SubastaCreada(_auctionId, msg.sender);
     }
 
-    function proponerOferta(bytes32 _auctionId) public payable {
-        // emit OfertaPropuesta(msg.sender, auction.offers[msg.sender]);
+    function proponerOferta(bytes32 _auctionId) public payable siSubastaExiste(_auctionId) enTiempo(_auctionId)
+    {
+        Auction storage auction = subastas[_auctionId];
+
+        // Del enunciado entiendo que la oferta es las suma de todo el dinero
+        // ya enviado por el postor (lo que realmente facilita el trabajo)
+        uint offer = auction.offers[msg.sender] + msg.value;
+        if (offer < auction.highestBid) {
+            revert OfertaInvalida();
+        }
+
+        auction.highestBid = offer;
+
+        // Si el postor nunca ofertó hasta ahora, lo cargo al array de postores
+        if (auction.offers[msg.sender] == 0)
+            auction.bidders.push(msg.sender);
+        
+        auction.offers[msg.sender] = offer;
+
+        uint tiempoRestante = auction.endTime - block.timestamp;
+        if (tiempoRestante < 5 minutes)
+            auction.endTime += 5 minutes;
+
+        emit OfertaPropuesta(msg.sender, auction.offers[msg.sender]);
+    
     }
 
-    function finalizarSubasta(bytes32 _auctionId) public {
-        // emit SubastaFinalizada(auction.highestBidder, auction.highestBid);
+    function finalizarSubasta(bytes32 _auctionId) public
+        siSubastaExiste(_auctionId)
+        siSubastaTerminada(_auctionId)
+        siSubastaNoFinalizada(_auctionId)
+    {
+        Auction storage auction = subastas[_auctionId];
+
+        // Eliminar la subasta de la lista de subastas activas
+        for (uint i ; i < subastasActivas.length ; i++) {
+            if (subastasActivas[i] == _auctionId)
+                delete subastasActivas[i];
+        }
+
+        // Encontrar la mejor oferta, y por consiguiente, el mejor postor
+        for (uint i ; i < auction.bidders.length ; i++) {
+            if (auction.offers[auction.bidders[i]] == auction.highestBid) {
+                auction.highestBidder = auction.bidders[i];    
+            }
+        }
+
+        // Premiar al mejor postor con 1 ether
+        auction.offers[auction.highestBidder] += ETH;
+
+        // Finalizar subasta
+        auction.finalized = true;
+
+        emit SubastaFinalizada(auction.highestBidder, auction.highestBid);
     }
 
-    function recuperarOferta(bytes32 _auctionId) public {
-        // payable(msg.sender).transfer(amount);
+    function recuperarOferta(bytes32 _auctionId) public
+        siSubastaExiste(_auctionId)
+        siSubastaFinalizada(_auctionId)
+    {
+        uint amount = subastas[_auctionId].offers[msg.sender];
+        payable(msg.sender).transfer(amount);
     }
 
-    function verSubastasActivas() public view returns (bytes32[] memory) {}
+    function verSubastasActivas() public view returns (bytes32[] memory) {
+        return subastasActivas;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////   INTERNAL METHODS  ///////////////////////////////
