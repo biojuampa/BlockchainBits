@@ -45,44 +45,70 @@ pragma solidity 0.8.19;
  */
 
 contract Desafio_2 {
-    // 1
+    
+    // 1 //
     // definir un 'admin'
     // no cambiar
     address public admin = 0x08Fb288FcC281969A0BBE6773857F99360f2Ca06;
 
     modifier soloAdmin() {
         // definir logica
+        require(msg.sender == admin, "No eres el admin");
         _;
     }
 
-    // function metodoAccesoProtegido() {
-    //     // ...logica
-    // }
+    function metodoAccesoProtegido() public soloAdmin {
+        // ...logica
+    }
 
-    // 2
+    // 2 //
     // definir lista blanca con un mapping
-    // mapping listaBlanca;
-    // modifier soloListaBlanca
-
-    // function metodoPermisoProtegido
+    mapping (address => bool) public listaBlanca;
+    
+    modifier soloListaBlanca() {
+        require(listaBlanca[msg.sender], "Fuera de la lista blanca");
+        _;
+    }
 
     // function incluirEnListaBlanca
+    function incluirEnListaBlanca(address _user) public soloAdmin {
+        listaBlanca[_user] = true;
+    }
 
-    // 3
+    function metodoPermisoProtegido() public soloListaBlanca {
+
+    }
+
+    // 3 //
     // definir un rango de tiempo cualquiera (e.g. hoy + 30 days)
     // En solidity se cumple que: 1 days = 86400 seconds
     uint256 public tiempoLimite = block.timestamp + 30 days;
 
     // modifier soloEnTiempo
+    modifier soloEnTiempo() {
+        require(block.timestamp < tiempoLimite, "Fuera de tiempo");
+        _;
+    }
 
-    // function metodoTiempoProtegido
+    function metodoTiempoProtegido() public soloEnTiempo {
 
-    // 4
+    }
+
+    // 4 //
     // definir un booleano para pausar
-    // bool public pausado;
-    // modifier pausa
+    bool pausado;
+    
+    modifier pausa() {
+        require(pausado == false, "El metodo esta pausado");
+        _;
+    }
 
-    // function metodoPausaProtegido
+    function metodoPausaProtegido() public pausa {
 
-    // function cambiarPausa()
+    }
+
+    function cambiarPausa() public soloAdmin {
+        pausado = !pausado;
+    }
+    
 }
