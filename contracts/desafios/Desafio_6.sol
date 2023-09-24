@@ -44,27 +44,70 @@ contract AirdropOne is Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, msg.sender);
     }
 
+    // Por alguna endemoniada razón así los test no funcionan
+    // y me hizo perder dos valiosos días de mi vida :(
+    // IMiPrimerTKN miToken = IMiPrimerTKN(miPrimerTokenAdd);
+ 
     function participateInAirdrop() public whenNotPaused {
         // lista blanca
+        if (!whiteList[msg.sender]) {
+            revert("No esta en lista blanca");
+        }
 
         // ya solicitó tokens
+        if (haSolicitado[msg.sender]) {
+            revert("Ya ha participado");
+        }
+
+        // Si se llegó al máximo de tokens totales (esta comprobación se debería hacer al principio)
+        if (totalAirdropMax == airdropGivenSoFar) {
+            revert("No quedan tokens disponibles");
+        }
 
         // pedir número random de tokens
         uint256 tokensToReceive = _getRadomNumberBelow1000();
 
         // verificar que no se exceda el total de tokens a repartir
 
+        // if ( 1 > tokensToReceive || tokensToReceive > 1000) {
+        //     revert("Algo ha fallado");
+        // }
+
+        // Esto quizás no sea una buena idea
+        uint256 totalAirdropGiven = airdropGivenSoFar + tokensToReceive;
+        while (true) {
+            if (totalAirdropGiven > totalAirdropMax ) {
+                tokensToReceive = _getRadomNumberBelow1000();
+            } else { break; }
+        }
+
         // actualizar el conteo de tokens repartidos
+        airdropGivenSoFar += tokensToReceive;
+
         // marcar que ya ha participado
+        haSolicitado[msg.sender] = true;
 
         // transferir los tokens
+        IMiPrimerTKN(miPrimerTokenAdd).mint(msg.sender, tokensToReceive);
+        // miToken.mint(msg.sender, tokensToReceive);
     }
 
     function quemarMisTokensParaParticipar() public whenNotPaused {
         // verificar que el usuario aun no ha participado
+        if (!haSolicitado[msg.sender]) {
+            revert("Usted aun no ha participado");
+        }
+
         // Verificar si el que llama tiene suficientes tokens
+        if (IMiPrimerTKN(miPrimerTokenAdd).balanceOf(msg.sender) < quemaTokensParticipar) {
+            revert("No tiene suficientes tokens para quemar");
+        }
+
         // quemar los tokens
+        IMiPrimerTKN(miPrimerTokenAdd).burn(msg.sender, quemaTokensParticipar);
+
         // dar otro chance
+        delete haSolicitado[msg.sender];
     }
 
     ///////////////////////////////////////////////////////////////
