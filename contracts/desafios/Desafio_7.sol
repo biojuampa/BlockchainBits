@@ -24,11 +24,138 @@ contract AirdropTwo is Pausable, AccessControl {
     // instanciamos el token en el contrato
     IMiPrimerTKN miPrimerToken;
 
-    constructor(address _tokenAddress) {}
+    constructor(address _tokenAddress) {
+        miPrimerToken = IMiPrimerTKN(_tokenAddress);
 
-    function participateInAirdrop() public {}
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
-    function participateInAirdrop(address _elQueRefirio) public {}
+///////////////////////////////////////////////////////////
+
+    // // Participante ya participó
+    // mapping (address => bool) participo;
+
+    // // Participaciones restantes
+    // mapping (address => uint) participacionesRestantes;
+    
+    // // Hora de la última vez que participo
+    // mapping (address => uint) ultimaVez;
+
+///////////////////////////////////////////////////////////
+
+    struct Participante {
+        address cuentaParticipante;
+        uint participaciones;
+        uint limiteParticipaciones;
+        uint ultimaVezParticipado;
+    }
+
+    mapping (address => Participante) public participantes;
+
+    modifier quedanIntentos() {
+        // if (!participo[msg.sender]) {
+        //     participacionesRestantes[msg.sender] = 10;
+        //     participo[msg.sender] = true;
+        // }
+
+        // require(
+        //     participacionesRestantes[msg.sender] > 0,
+        //     "Llegaste limite de participaciones"
+        //     );
+
+        Participante storage participante = participantes[msg.sender];
+
+        if (participante.cuentaParticipante == address(0)) {
+            participante.cuentaParticipante = msg.sender;
+            participante.limiteParticipaciones = 10;
+        }
+
+        require(
+            participante.participaciones < participante.limiteParticipaciones,
+            "Llegaste limite de participaciones"
+        );       
+
+        _;
+    }
+    
+    modifier yaPasoUnDia () {
+        // require(
+        //     (ultimaVez[msg.sender] + 1 days) < block.timestamp,
+        //     "Ya participaste en el ultimo dia"
+        // );
+
+        require(
+            (participantes[msg.sender].ultimaVezParticipado + 1 days) < block.timestamp,
+            "Ya participaste en el ultimo dia"
+        );
+
+        _;
+    }
+
+    // function inicializarParticipante(address _account) private {
+
+    // }
+
+    function participateInAirdrop() public
+        quedanIntentos
+        yaPasoUnDia
+    {
+
+        // Número aleatorio de tokens a recibir
+        uint tokensaRecibir = _getRadomNumber10005000();
+
+        // Si el contrato tiene suficientes tokens
+        require(
+            miPrimerToken.balanceOf(address(this)) >= tokensaRecibir,
+            "El contrato Airdrop no tiene tokens suficientes"
+        );
+
+        // Le transfiero los tokens al usuario
+        bool succcess = miPrimerToken.transfer(msg.sender, tokensaRecibir);
+        
+        // Transferencia de tokens existosa
+        if (succcess) {
+            participantes[msg.sender].participaciones += 1;
+            participantes[msg.sender].ultimaVezParticipado = block.timestamp;
+        } else {
+            revert("Hubo un error transfiriendo los tokens");
+        }
+        
+    }
+
+    modifier noAutoreferido(address _account) {
+        require(
+            msg.sender != _account,
+            "No puede autoreferirse"
+        );
+
+
+        _;
+    }
+
+    // modifier referidoExiste(address _account) {
+    //     // require(participo[_referido], "El referido no es un participante");
+    //     require(
+    //         participantes[_account].cuentaParticipante != address(0),
+    //         "El referido no es un participante"
+    //     );
+        
+    //     _;
+    // }
+
+    function participateInAirdrop(address _elQueRefirio) public
+        noAutoreferido(_elQueRefirio)
+    {
+        // if (participantes[_elQueRefirio].cuentaParticipante != address(0)) {
+        //     participantes[_elQueRefirio].cuentaParticipante = msg.sender;
+            // participantes[_elQueRefirio].limiteParticipaciones = 13;
+        // } else {
+        //     participantes[_elQueRefirio].limiteParticipaciones += 3;
+        // }
+
+        participantes[_elQueRefirio].limiteParticipaciones = 13;
+        participateInAirdrop();
+    }
 
     ///////////////////////////////////////////////////////////////
     ////                     HELPER FUNCTIONS                  ////
