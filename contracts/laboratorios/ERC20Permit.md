@@ -204,5 +204,5 @@ Si lograste este resultado, felicidades. Haz realizado con éxitos este laborato
 
 ## Tarea
 
-1. Publica otro token similar a `Token20Permit` con tu propio nombre (seguido de la palabra `permi`) y símbolo. Pega el address aquí:
-2. Como `Propietario` genera una firma off-chain. Utiliza una address que represente a `X` y utiliza la firma off-chain para ejecutar el método `permit`. Pega el hash de la transacción aquí:
+1. Publica otro token similar a `Token20Permit` con tu propio nombre (seguido de la palabra `permi`) y símbolo. Pega el address aquí: 0x87b509c9Fdb12c02B67aba4B1348b56dFF1A39DE
+2. Como `Propietario` genera una firma off-chain. Utiliza una address que represente a `X` y utiliza la firma off-chain para ejecutar el método `permit`. Pega el hash de la transacción aquí: 0x23173b183033e75faa2b5ce4fef71925d0461c8b429cfe4e6d1e92e1d2d87371
