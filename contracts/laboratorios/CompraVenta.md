@@ -365,7 +365,7 @@ Dado que tenemos un balance de USDC y el contrato del token `MTLMRR` publicado, 
 
 ## Tarea
 
-1. Publica otro clon de USDC en `Mumbai` y pega el address aquí:
+1. Publica otro clon de USDC en `Mumbai` y pega el address aquí: 0x1B86BAF2d3b55aE4DC5533e55d35b5AF72C4F6dA
 
 2. Publica un clon del contrato `MiTokenLeeMarreros` en `Mumbai`  teniendo en cuenta lo siguiente:
 
@@ -381,4 +381,4 @@ Dado que tenemos un balance de USDC y el contrato del token `MTLMRR` publicado, 
 
      Investiga. Sobreescribe este método desde el hijo para crear esa validación. Incluye la estructura de datos que necesites
 
-3. Pega el address de tu contrato del token aquí:
+3. Pega el address de tu contrato del token aquí: 0xBe7e27F3A80a9AE7C79348e0571630A8d0d7E796
