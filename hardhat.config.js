@@ -1,9 +1,24 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
+//  solidity: "0.8.19",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.18",
+      },
+      {
+        version: "0.8.19"
+      },
+//      {
+//        version: "0.9.0",
+//        options: {} // Optionally add more options
+//      }
+    ],
+  },
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545",
@@ -11,6 +26,13 @@ module.exports = {
     mumbai: {
       url: process.env.MUMBAI_TESNET_URL,
       accounts: [process.env.PRIVATE_KEY],
+      timeout: 0,
+      gas: "auto",
+      gasPrice: "auto",
+    },
+    sepolia: {
+      url: process.env.SEPOLIA_TESNET_URL,
+      accounts: [process.env.PRIVATE_KEY || ""],
       timeout: 0,
       gas: "auto",
       gasPrice: "auto",
