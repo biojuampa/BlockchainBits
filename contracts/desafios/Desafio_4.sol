@@ -77,29 +77,18 @@ contract Desafio_4 {
     // Un ether
     uint constant ETH = 10**18; 
 
-    // struct Bidder {
-    //     address oferenteID;
-    //     uint amount;
-    // }
-
     struct Auction {
         bytes32 auctionID;
-        address owner;
         bool finalized;
-        
         uint startTime;
         uint endTime;
-        // uint lastOffer;  // la última oferta siempre va a ser la mejor
-
-        address[] bidders;
         mapping(address => uint) offers;
-        // Bidder[] bidders;
-        
-        uint highestBid;
-        address highestBidder;
+        uint highestBid;        // siempre será la última oferta
+        address highestBidder;  // siempre será el último oferente
     }
     
     bytes32[] subastasActivas;
+    mapping (bytes32 => uint) indiceSubastasActivas; // indice + 1
     mapping(bytes32 => Auction) subastas;
 
     
@@ -139,6 +128,29 @@ contract Desafio_4 {
         _;
     }
 
+    // agrego una subasta al array de subastas (y su mapa de índices)
+    function agregarSubasta(bytes32 _auctionID) public {
+        require(indiceSubastasActivas[_auctionID] == 0, "La subasta ya existe");
+        
+        subastasActivas.push(_auctionID);
+        indiceSubastasActivas[_auctionID] = subastasActivas.length; // index + 1
+    }
+
+    // quito una subasta del array de subastas (y de su mapa de índices)
+    function quitarSubasta(bytes32 _auctionID) public {
+        require(indiceSubastasActivas[_auctionID] != 0, "La subasta NO existe");
+
+        uint index = indiceSubastasActivas[_auctionID] - 1; // índice de la subasta activa en el vector 
+        uint lastIndex = subastasActivas.length - 1;        // último íncide del vector de subastas activas
+
+        bytes32 auctionToMove = subastasActivas[lastIndex];
+        subastasActivas[index] = auctionToMove;
+        subastasActivas.pop();
+
+        indiceSubastasActivas[auctionToMove] = index + 1;
+        delete indiceSubastasActivas[_auctionID];
+    }
+
     function creaSubasta(uint256 _startTime, uint256 _endTime) public payable {
         if (_endTime < _startTime) {
             revert TiempoInvalido();
@@ -149,38 +161,19 @@ contract Desafio_4 {
 
         bytes32 _auctionId = _createId(_startTime, _endTime);
 
-        subastasActivas.push(_auctionId);
+        agregarSubasta(_auctionId);
 
         Auction storage auction = subastas[_auctionId];
         auction.auctionID = _auctionId;
-        auction.owner = msg.sender;
         auction.startTime = _startTime;
         auction.endTime = _endTime;
-
-        // El siguiente código comentado son pruebas que no funcionan pero que quise 
-        // hacer para entender mejor lo que explicó el profesor Lee respecto de estas
-        // particularidades de estructuras en solidity.
-
-        // Auction memory auction = Auction({
-        //     auctionID : _auctionId,
-        //     owner     : msg.sender,
-        //     startTime : _startTime,
-        //     endTime   : _endTime
-        // });
-
-        // subastasActivas.push(auction);
-
-        // subastasActivas.push(Auction({
-        //     auctionID : _auctionId,
-        //     owner     : msg.sender,
-        //     startTime : _startTime,
-        //     endTime   : _endTime            
-        // }));
 
         emit SubastaCreada(_auctionId, msg.sender);
     }
 
-    function proponerOferta(bytes32 _auctionId) public payable siSubastaExiste(_auctionId) enTiempo(_auctionId)
+    function proponerOferta(bytes32 _auctionId) public payable
+        siSubastaExiste(_auctionId)
+        enTiempo(_auctionId)
     {
         Auction storage auction = subastas[_auctionId];
 
@@ -191,14 +184,15 @@ contract Desafio_4 {
             revert OfertaInvalida();
         }
 
+        // mejor oferta
         auction.highestBid = offer;
+        // mejor postor
+        auction.highestBidder = msg.sender;
 
-        // Si el postor nunca ofertó hasta ahora, lo cargo al array de postores
-        if (auction.offers[msg.sender] == 0)
-            auction.bidders.push(msg.sender);
-        
+        // guardo el total ofertado por el participante para saber cuánto devolverle
         auction.offers[msg.sender] = offer;
 
+        // extiendo el tiempo de la subasta
         uint tiempoRestante = auction.endTime - block.timestamp;
         if (tiempoRestante < 5 minutes)
             auction.endTime += 5 minutes;
@@ -215,17 +209,7 @@ contract Desafio_4 {
         Auction storage auction = subastas[_auctionId];
 
         // Eliminar la subasta de la lista de subastas activas
-        for (uint i ; i < subastasActivas.length ; i++) {
-            if (subastasActivas[i] == _auctionId)
-                delete subastasActivas[i];
-        }
-
-        // Encontrar la mejor oferta, y por consiguiente, el mejor postor
-        for (uint i ; i < auction.bidders.length ; i++) {
-            if (auction.offers[auction.bidders[i]] == auction.highestBid) {
-                auction.highestBidder = auction.bidders[i];    
-            }
-        }
+        quitarSubasta(_auctionId);
 
         // Premiar al mejor postor con 1 ether
         auction.offers[auction.highestBidder] += ETH;
