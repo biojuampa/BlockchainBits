@@ -88,7 +88,8 @@ contract Desafio_4 {
     }
     
     bytes32[] subastasActivas;
-    mapping (bytes32 => uint) indiceSubastasActivas; // indice + 1
+    mapping (bytes32 => uint) indiceSubastasActivas; // indice + 1 (desplazo el index para poder controlar el address(0))
+
     mapping(bytes32 => Auction) subastas;
 
     
@@ -140,7 +141,7 @@ contract Desafio_4 {
     function quitarSubasta(bytes32 _auctionID) public {
         require(indiceSubastasActivas[_auctionID] != 0, "La subasta NO existe");
 
-        uint index = indiceSubastasActivas[_auctionID] - 1; // índice de la subasta activa en el vector 
+        uint index = indiceSubastasActivas[_auctionID] - 1; // índice de la subasta a quitar en el vector 
         uint lastIndex = subastasActivas.length - 1;        // último íncide del vector de subastas activas
 
         bytes32 auctionToMove = subastasActivas[lastIndex];

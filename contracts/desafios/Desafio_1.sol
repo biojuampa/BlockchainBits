@@ -98,10 +98,8 @@ contract Desafio_1 {
     ) public {
         require(_usuario != address(0), "El address no puede ser 0x00");
         require(0 < _activoID && _activoID < 1000000, "Codigo de activo invalido");
-        // require(0 < _ciudadID && _ciudadID < 1000000, "Codigo de ciudad invalido");
         
         if (1 > _ciudadID || _ciudadID > 999999) {
-            // revert("Codigo de ciudad invalido");
             revert CiudadInvalidaError(_ciudadID);
         }
         

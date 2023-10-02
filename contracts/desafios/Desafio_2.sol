@@ -99,7 +99,7 @@ contract Desafio_2 {
     bool pausado;
     
     modifier pausa() {
-        require(pausado == false, "El metodo esta pausado");
+        require(!pausado, "El metodo esta pausado");
         _;
     }
 

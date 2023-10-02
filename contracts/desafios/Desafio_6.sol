@@ -44,36 +44,20 @@ contract AirdropOne is Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, msg.sender);
     }
 
-    // Por alguna endemoniada razón así los test no funcionan
-    // y me hizo perder dos valiosos días de mi vida :(
-    // IMiPrimerTKN miToken = IMiPrimerTKN(miPrimerTokenAdd);
- 
     function participateInAirdrop() public whenNotPaused {
         // lista blanca
-        if (!whiteList[msg.sender]) {
-            revert("No esta en lista blanca");
-        }
+        require(whiteList[msg.sender], "No esta en lista blanca");
 
         // ya solicitó tokens
-        if (haSolicitado[msg.sender]) {
-            revert("Ya ha participado");
-        }
+        require(!haSolicitado[msg.sender], "Ya ha participado");
 
-        // Si se llegó al máximo de tokens totales (esta comprobación se debería hacer al principio)
-        if (totalAirdropMax == airdropGivenSoFar) {
-            revert("No quedan tokens disponibles");
-        }
+        // Si se llegó al máximo de tokens totales
+        require(totalAirdropMax > airdropGivenSoFar, "No quedan tokens disponibles");
 
         // pedir número random de tokens
         uint256 tokensToReceive = _getRadomNumberBelow1000();
 
-        // verificar que no se exceda el total de tokens a repartir
-
-        // if ( 1 > tokensToReceive || tokensToReceive > 1000) {
-        //     revert("Algo ha fallado");
-        // }
-
-        // Esto quizás no sea una buena idea
+        // Esto quizás no sea una buena idea, podría ser un hermoso cuello de botella ;)
         uint256 totalAirdropGiven = airdropGivenSoFar + tokensToReceive;
         while (true) {
             if (totalAirdropGiven > totalAirdropMax ) {
@@ -89,19 +73,17 @@ contract AirdropOne is Pausable, AccessControl {
 
         // transferir los tokens
         IMiPrimerTKN(miPrimerTokenAdd).mint(msg.sender, tokensToReceive);
-        // miToken.mint(msg.sender, tokensToReceive);
     }
 
     function quemarMisTokensParaParticipar() public whenNotPaused {
         // verificar que el usuario aun no ha participado
-        if (!haSolicitado[msg.sender]) {
-            revert("Usted aun no ha participado");
-        }
+        require(haSolicitado[msg.sender], "Usted aun no ha participado");
 
         // Verificar si el que llama tiene suficientes tokens
-        if (IMiPrimerTKN(miPrimerTokenAdd).balanceOf(msg.sender) < quemaTokensParticipar) {
-            revert("No tiene suficientes tokens para quemar");
-        }
+        require(
+            IMiPrimerTKN(miPrimerTokenAdd).balanceOf(msg.sender) >= quemaTokensParticipar,
+            "No tiene suficientes tokens para quemar"
+        );
 
         // quemar los tokens
         IMiPrimerTKN(miPrimerTokenAdd).burn(msg.sender, quemaTokensParticipar);

@@ -30,19 +30,6 @@ contract AirdropTwo is Pausable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-///////////////////////////////////////////////////////////
-
-    // // Participante ya participó
-    // mapping (address => bool) participo;
-
-    // // Participaciones restantes
-    // mapping (address => uint) participacionesRestantes;
-    
-    // // Hora de la última vez que participo
-    // mapping (address => uint) ultimaVez;
-
-///////////////////////////////////////////////////////////
-
     struct Participante {
         address cuentaParticipante;
         uint participaciones;
@@ -53,16 +40,6 @@ contract AirdropTwo is Pausable, AccessControl {
     mapping (address => Participante) public participantes;
 
     modifier quedanIntentos() {
-        // if (!participo[msg.sender]) {
-        //     participacionesRestantes[msg.sender] = 10;
-        //     participo[msg.sender] = true;
-        // }
-
-        // require(
-        //     participacionesRestantes[msg.sender] > 0,
-        //     "Llegaste limite de participaciones"
-        //     );
-
         Participante storage participante = participantes[msg.sender];
 
         if (participante.cuentaParticipante == address(0)) {
@@ -79,11 +56,6 @@ contract AirdropTwo is Pausable, AccessControl {
     }
     
     modifier yaPasoUnDia () {
-        // require(
-        //     (ultimaVez[msg.sender] + 1 days) < block.timestamp,
-        //     "Ya participaste en el ultimo dia"
-        // );
-
         require(
             (participantes[msg.sender].ultimaVezParticipado + 1 days) < block.timestamp,
             "Ya participaste en el ultimo dia"
@@ -92,9 +64,15 @@ contract AirdropTwo is Pausable, AccessControl {
         _;
     }
 
-    // function inicializarParticipante(address _account) private {
+    modifier noAutoreferido(address _account) {
+        require(
+            msg.sender != _account,
+            "No puede autoreferirse"
+        );
 
-    // }
+
+        _;
+    }
 
     function participateInAirdrop() public
         quedanIntentos
@@ -123,36 +101,9 @@ contract AirdropTwo is Pausable, AccessControl {
         
     }
 
-    modifier noAutoreferido(address _account) {
-        require(
-            msg.sender != _account,
-            "No puede autoreferirse"
-        );
-
-
-        _;
-    }
-
-    // modifier referidoExiste(address _account) {
-    //     // require(participo[_referido], "El referido no es un participante");
-    //     require(
-    //         participantes[_account].cuentaParticipante != address(0),
-    //         "El referido no es un participante"
-    //     );
-        
-    //     _;
-    // }
-
     function participateInAirdrop(address _elQueRefirio) public
         noAutoreferido(_elQueRefirio)
     {
-        // if (participantes[_elQueRefirio].cuentaParticipante != address(0)) {
-        //     participantes[_elQueRefirio].cuentaParticipante = msg.sender;
-            // participantes[_elQueRefirio].limiteParticipaciones = 13;
-        // } else {
-        //     participantes[_elQueRefirio].limiteParticipaciones += 3;
-        // }
-
         participantes[_elQueRefirio].limiteParticipaciones = 13;
         participateInAirdrop();
     }
